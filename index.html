@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyTube Premium</title>
+    <!-- Google Fonts and Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <style>
+        :root {
+            --yt-background: #0f0f0f;
+            --yt-surface: #212121;
+            --yt-text-primary: #ffffff;
+            --yt-text-secondary: #aaaaaa;
+            --yt-border-color: #383838;
+            --yt-accent-red: #ff0000;
+        }
+        
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            margin: 0;
+            background-color: var(--yt-background);
+            color: var(--yt-text-primary);
+            padding-bottom: 60px;
+        }
+
+        /* --- Login Screen --- */
+        #authContainer {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+            position: fixed; top: 0; left: 0; width: 100%; z-index: 200; background: var(--yt-background);
+        }
+        .auth-form {
+            background-color: var(--yt-surface);
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 350px;
+        }
+        .auth-logo { font-size: 28px; color: var(--yt-accent-red); font-weight: bold; margin-bottom: 20px; }
+        .auth-form input { width: calc(100% - 24px); padding: 12px; margin-bottom: 12px; border: 1px solid var(--yt-border-color); background-color: var(--yt-background); color: var(--yt-text-primary); border-radius: 5px; font-size: 16px; }
+        .auth-form button { width: 100%; padding: 12px; border: none; border-radius: 20px; font-size: 16px; cursor: pointer; font-weight: 500;}
+        #loginBtn { background-color: var(--yt-accent-red); color: white; }
+        #signupBtn { background-color: transparent; border: 1px solid var(--yt-border-color); color: #3ea6ff; margin-top: 10px;}
+        .error-message { color: #ff4d4d; margin-top: 10px; font-size: 14px; min-height: 20px;}
+        
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            background-color: var(--yt-background);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .youtube-logo { display: flex; align-items: center; font-size: 20px; font-weight: bold; }
+        .youtube-logo img { height: 24px; margin-right: 8px; border-radius: 4px; object-fit: contain; }
+        .header-icons { display: flex; align-items: center; }
+        .header-icons .material-icons { font-size: 24px; margin-left: 20px; color: var(--yt-text-primary); cursor: pointer; }
+
+        /* Video Grid */
+        .video-grid { padding: 16px 0; }
+        .video-card { margin-bottom: 24px; cursor: pointer; }
+        .thumbnail-container img { width: 100%; display: block; }
+        .video-details { display: flex; padding: 12px 16px 0 16px; align-items: flex-start; }
+        .channel-avatar { width: 36px; height: 36px; border-radius: 50%; margin-right: 12px; background-color: var(--yt-surface); }
+        .meta-info { flex: 1; overflow: hidden; }
+        .video-title {
+            font-size: 16px; font-weight: 500; margin: 0 0 4px 0; line-height: 1.3;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;
+        }
+        .channel-info { font-size: 12px; color: var(--yt-text-secondary); }
+        .options-menu { color: var(--yt-text-primary); cursor: pointer; padding-left: 12px; }
+        
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background-color: var(--yt-background); border-top: 1px solid var(--yt-border-color);
+            display: flex; justify-content: space-around; padding: 4px 0; z-index: 100;
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--yt-text-secondary); font-size: 10px; cursor: pointer; padding: 4px; width: 20%; }
+        .nav-item.active { color: var(--yt-text-primary); }
+        .nav-item .material-icons { font-size: 24px; margin-bottom: 2px; }
+        .nav-item-create .material-icons { font-size: 36px; }
+        
+        /* Loader Animation */
+        #loader { text-align: center; padding: 20px; display: none; }
+        .spinner { width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; margin: 0 auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Video Player Modal (Updated for Fullscreen) */
+        #videoModal { display: none; position: fixed; z-index: 101; left: 0; top: 0; width: 100%; height: 100%; background-color: black; flex-direction: column; justify-content: center; align-items: center; }
+        .video-wrapper { position: relative; width: 100%; max-width: 100%; }
+        #videoPlayer { width: 100%; border: none; aspect-ratio: 16/9; display: block;}
+        
+        /* Video Controls Container */
+        .modal-controls {
+            position: absolute; top: 10px; left: 0; width: 100%;
+            display: flex; justify-content: space-between; padding: 0 15px; box-sizing: border-box;
+            z-index: 102; pointer-events: none; /* Let clicks pass through except buttons */
+        }
+        .control-btn {
+            background-color: rgba(0,0,0,0.6); color: white; border-radius: 50%;
+            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; pointer-events: auto;
+        }
+        
+        #videoTitle { color: white; padding: 15px; text-align: left; font-size: 16px; font-weight: 500; margin: 0; width: 100%; box-sizing: border-box; }
+
+        /* Profile Styles */
+        #profileOverlay {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--yt-background);
+            z-index: 150;
+            overflow-y: auto;
+            flex-direction: column;
+        }
+        .profile-header {
+            padding: 30px 20px;
+            background-color: var(--yt-surface);
+            display: flex; flex-direction: column; align-items: center;
+            border-bottom: 1px solid var(--yt-border-color);
+            position: relative;
+        }
+        .profile-pic-wrapper { position: relative; width: 80px; height: 80px; margin-bottom: 15px; }
+        .profile-pic-large {
+            width: 100%; height: 100%; border-radius: 50%;
+            object-fit: cover; background-color: #444;
+        }
+        .edit-icon-badge {
+            position: absolute; bottom: 0; right: 0;
+            background-color: var(--yt-accent-red); color: white;
+            border-radius: 50%; width: 24px; height: 24px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border: 2px solid var(--yt-surface);
+        }
+        .profile-header h2 { margin: 0; font-size: 20px; }
+        .profile-header p { margin: 5px 0 0; color: var(--yt-text-secondary); font-size: 14px; }
+        .close-profile-btn {
+            position: absolute; top: 15px; left: 15px;
+            color: var(--yt-text-primary); cursor: pointer;
+        }
+        .profile-menu { padding: 10px 0; }
+        .menu-item {
+            display: flex; align-items: center; padding: 15px 20px;
+            cursor: pointer; border-bottom: 1px solid #222;
+        }
+        .menu-item .material-icons { margin-right: 20px; color: var(--yt-text-secondary); }
+        .menu-text { flex: 1; font-size: 16px; }
+        .menu-subtext { font-size: 14px; color: var(--yt-text-secondary); }
+        .auth-actions { padding: 20px; display: flex; justify-content: center; }
+        .btn-action {
+            background-color: #3ea6ff; color: black; border: none;
+            padding: 10px 25px; border-radius: 20px; font-weight: bold; font-size: 14px;
+            cursor: pointer; width: 100%;
+        }
+        .btn-logout { background-color: var(--yt-surface); color: var(--yt-accent-red); border: 1px solid var(--yt-border-color); }
+    </style>
+</head>
+<body>
+
+    <!-- Auth Container -->
+    <div id="authContainer" style="display: none;">
+        <span onclick="closeAuth()" style="position: absolute; top: 20px; left: 20px; color: white; cursor: pointer;"><i class="material-icons">close</i></span>
+        <div class="auth-form">
+            <div class="auth-logo">MyTube</div>
+            <input type="email" id="email" placeholder="Email">
+            <input type="password" id="password" placeholder="Password">
+            <button id="loginBtn">Log In</button>
+            <button id="signupBtn">Sign Up</button> 
+            <p id="errorMessage" class="error-message"></p>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="appContainer" style="display: block;">
+        <header>
+            <div class="youtube-logo">
+                <img id="appLogoImg" src="https://www.gstatic.com/youtube/img/branding/yt_icon_rgb.png" alt="Logo">
+                <span id="appNameText">MyTube</span>
+            </div>
+            <div class="header-icons">
+                <i class="material-icons">cast</i>
+                <i class="material-icons">notifications</i>
+                <i class="material-icons" id="searchIcon">search</i>
+            </div>
+        </header>
+        
+        <main id="videoGrid" class="video-grid"></main>
+        
+        <div id="loader"><div class="spinner"></div></div>
+
+        <nav class="bottom-nav">
+            <div class="nav-item active"> <i class="material-icons">home</i> <span>Home</span> </div>
+            <div class="nav-item"> <i class="material-icons">explore</i> <span>Shorts</span> </div>
+            <div class="nav-item nav-item-create"> <i class="material-icons">add_circle_outline</i> </div>
+            <div class="nav-item"> <i class="material-icons">subscriptions</i> <span>Subscriptions</span> </div>
+            <div class="nav-item" id="youBtn"> <i class="material-icons">person</i> <span>You</span> </div>
+        </nav>
+    </div>
+
+    <!-- Profile Page -->
+    <div id="profileOverlay">
+        <div class="profile-header">
+            <div class="close-profile-btn" onclick="closeProfilePage()">
+                <i class="material-icons">arrow_back</i>
+            </div>
+            <div class="profile-pic-wrapper">
+                <img id="userProfileImg" class="profile-pic-large" src="https://www.w3schools.com/howto/img_avatar.png">
+                <div class="edit-icon-badge" onclick="editProfilePic()"><i class="material-icons">edit</i></div>
+            </div>
+            <h2 id="profileNameDisplay">Guest User</h2>
+            <p id="profileEmailDisplay">Sign in to manage your account</p>
+        </div>
+        <div class="profile-menu">
+            <div class="menu-item" onclick="changeLanguage()">
+                <i class="material-icons">language</i>
+                <span class="menu-text">Language</span>
+                <span class="menu-subtext" id="currentLang">English</span>
+            </div>
+            <div class="menu-item"><i class="material-icons">history</i><span class="menu-text">History</span></div>
+            <div class="menu-item"><i class="material-icons">settings</i><span class="menu-text">Settings</span></div>
+        </div>
+        <div class="auth-actions">
+            <button id="profileMainActionBtn" class="btn-action">Sign In / Sign Up</button>
+        </div>
+    </div>
+
+    <!-- Video Modal with Fullscreen Button -->
+    <div id="videoModal">
+        <div class="modal-controls">
+            <span class="control-btn" id="videoCloseBtn"><i class="material-icons">keyboard_arrow_down</i></span>
+            <!-- NEW Fullscreen Button -->
+            <span class="control-btn" onclick="toggleFullScreen()"><i class="material-icons">fullscreen</i></span>
+        </div>
+        
+        <div class="video-wrapper">
+            <iframe id="videoPlayer" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
+        </div>
+        <h3 id="videoTitle"></h3>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCW-uCTViPoRPJkFkQx0pm6NIT2vHsuu2Y",
+            authDomain: "fir-c539d.firebaseapp.com",
+            databaseURL: "https://fir-c539d-default-rtdb.firebaseio.com",
+            projectId: "fir-c539d",
+            storageBucket: "fir-c539d.appspot.com",
+            messagingSenderId: "77596910319",
+            appId: "1:77596910319:web:96e8afa176caeca33f311a"
+        };
+        const YOUTUBE_API_KEY = "AIzaSyAbXbNRqKPGJO8ShoFxgYBtMvBIiwqxUNA"; 
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+        
+        // Elements
+        const authContainer = document.getElementById('authContainer');
+        const appContainer = document.getElementById('appContainer');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const loginBtn = document.getElementById('loginBtn');
+        const signupBtn = document.getElementById('signupBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const videoGrid = document.getElementById('videoGrid');
+        const searchIcon = document.getElementById('searchIcon');
+        const videoModal = document.getElementById('videoModal');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const videoTitle = document.getElementById('videoTitle');
+        const videoCloseBtn = document.getElementById('videoCloseBtn');
+        const youBtn = document.getElementById('youBtn');
+        const appLogoImg = document.getElementById('appLogoImg');
+        const appNameText = document.getElementById('appNameText');
+        const loader = document.getElementById('loader');
+        
+        // Profile Elements
+        const profileOverlay = document.getElementById('profileOverlay');
+        const profileNameDisplay = document.getElementById('profileNameDisplay');
+        const profileEmailDisplay = document.getElementById('profileEmailDisplay');
+        const profileMainActionBtn = document.getElementById('profileMainActionBtn');
+        const currentLang = document.getElementById('currentLang');
+        const userProfileImg = document.getElementById('userProfileImg');
+
+        let currentUser = null;
+        let nextPageToken = '';
+        let currentQuery = 'popular bangladeshi natok';
+        let isLoading = false;
+
+        // Admin Sync
+        database.ref('settings/app').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                if (data.logoUrl && data.logoUrl.trim() !== "") appLogoImg.src = data.logoUrl;
+                if (data.appName && data.appName.trim() !== "") {
+                    appNameText.textContent = data.appName;
+                    document.title = data.appName;
+                }
+            }
+        });
+
+        // Initial Load
+        searchVideos(currentQuery);
+
+        window.addEventListener('scroll', () => {
+            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
+                if (nextPageToken && !isLoading) {
+                    searchVideos(currentQuery, true); 
+                }
+            }
+        });
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                authContainer.style.display = 'none';
+                
+                profileNameDisplay.innerText = "MyTube User";
+                profileEmailDisplay.innerText = user.email;
+                profileMainActionBtn.innerText = "Log Out";
+                profileMainActionBtn.className = "btn-action btn-logout";
+                profileMainActionBtn.onclick = () => {
+                    auth.signOut().then(() => {
+                        alert("Logged out!");
+                        closeProfilePage();
+                        userProfileImg.src = "https://www.w3schools.com/howto/img_avatar.png";
+                    });
+                };
+
+                database.ref('users/' + user.uid).on('value', (snapshot) => {
+                    const userData = snapshot.val();
+                    if(userData && userData.profilePic) userProfileImg.src = userData.profilePic;
+                    else userProfileImg.src = "https://www.w3schools.com/howto/img_avatar.png";
+                });
+            } else {
+                currentUser = null;
+                profileNameDisplay.innerText = "Guest";
+                profileEmailDisplay.innerText = "Sign in to manage your account";
+                profileMainActionBtn.innerText = "Sign In / Sign Up";
+                profileMainActionBtn.className = "btn-action";
+                profileMainActionBtn.onclick = () => {
+                    closeProfilePage();
+                    authContainer.style.display = 'flex';
+                };
+                userProfileImg.src = "https://www.w3schools.com/howto/img_avatar.png";
+            }
+        });
+
+        signupBtn.onclick = () => auth.createUserWithEmailAndPassword(emailInput.value, passwordInput.value)
+            .then(cred => {
+                database.ref('users/' + cred.user.uid).set({email: cred.user.email, role: 'user'});
+                alert('Sign up successful!');
+                errorMessage.textContent = '';
+                authContainer.style.display = 'none';
+            }).catch(err => errorMessage.textContent = err.message);
+        
+        loginBtn.onclick = () => auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value)
+            .then(() => {
+                errorMessage.textContent = '';
+                authContainer.style.display = 'none';
+            }).catch(err => errorMessage.textContent = err.message);
+
+        function closeAuth() { authContainer.style.display = 'none'; }
+        youBtn.onclick = () => { profileOverlay.style.display = 'flex'; };
+        function closeProfilePage() { profileOverlay.style.display = 'none'; }
+
+        function editProfilePic() {
+            if(!currentUser) { alert("Please Sign In first."); return; }
+            const newPicUrl = prompt("Enter Image URL for Profile Pic:");
+            if(newPicUrl && newPicUrl.trim() !== "") {
+                database.ref('users/' + currentUser.uid).update({ profilePic: newPicUrl.trim() });
+            }
+        }
+
+        function changeLanguage() {
+            const langs = ["English", "Bangla", "Hindi"];
+            let promptText = "Select Language:\n";
+            langs.forEach((l, i) => promptText += `${i+1}. ${l}\n`);
+            const choice = prompt(promptText);
+            if(choice == 1) currentLang.innerText = "English";
+            else if(choice == 2) currentLang.innerText = "Bangla";
+            else if(choice == 3) currentLang.innerText = "Hindi";
+        }
+
+        searchIcon.onclick = () => {
+            const query = prompt("Search for videos:");
+            if (query && query.trim() !== "") {
+                currentQuery = query.trim();
+                nextPageToken = ''; 
+                videoGrid.innerHTML = ''; 
+                searchVideos(currentQuery);
+            }
+        };
+        
+        async function searchVideos(query, isLoadMore = false) {
+            if (isLoading) return;
+            isLoading = true;
+            if (isLoadMore) loader.style.display = 'block';
+            else showSkeletonLoader(8); 
+
+            let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&key=${YOUTUBE_API_KEY}&type=video&maxResults=50&regionCode=BD`;
+            if (nextPageToken) url += `&pageToken=${nextPageToken}`;
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.error) throw new Error(data.error.message);
+                nextPageToken = data.nextPageToken || ''; 
+                if (!isLoadMore) videoGrid.innerHTML = ''; 
+                displayVideos(data.items);
+            } catch (error) {
+                if(!isLoadMore) videoGrid.innerHTML = `<p style="text-align: center; color: red;">Error: ${error.message}.</p>`;
+            } finally {
+                isLoading = false;
+                loader.style.display = 'none';
+            }
+        }
+        
+        function displayVideos(videos) {
+            if (!videos || videos.length === 0) {
+                if(videoGrid.innerHTML === '') videoGrid.innerHTML = '<p style="text-align: center;">No videos found.</p>';
+                return;
+            }
+            videos.forEach(video => {
+                const videoCard = document.createElement('div');
+                videoCard.className = 'video-card';
+                const views = (Math.random() * 2 + 0.1).toFixed(1) + 'M';
+                const time = Math.floor(Math.random() * 11) + 1;
+                
+                videoCard.innerHTML = `
+                    <div class="thumbnail-container">
+                        <img src="${video.snippet.thumbnails.high.url}" alt="Video thumbnail">
+                    </div>
+                    <div class="video-details">
+                        <img class="channel-avatar" src="https://i.pravatar.cc/36?u=${video.snippet.channelId}" alt="channel avatar">
+                        <div class="meta-info">
+                            <h3 class="video-title">${video.snippet.title}</h3>
+                            <div class="channel-info">
+                                ${video.snippet.channelTitle} • ${views} views • ${time} months ago
+                            </div>
+                        </div>
+                        <i class="material-icons options-menu">more_vert</i>
+                    </div>
+                `;
+                videoCard.onclick = () => playVideo(video.id.videoId, video.snippet.title);
+                videoGrid.appendChild(videoCard);
+            });
+        }
+
+        function showSkeletonLoader(count) {
+            videoGrid.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const skeletonCard = document.createElement('div');
+                skeletonCard.className = 'skeleton-card';
+                skeletonCard.innerHTML = `
+                    <div class="skeleton-thumbnail"></div>
+                    <div class="skeleton-details">
+                        <div class="skeleton-avatar"></div>
+                        <div class="skeleton-text">
+                            <div class="skeleton-line1"></div>
+                            <div class="skeleton-line2"></div>
+                        </div>
+                    </div>
+                `;
+                videoGrid.appendChild(skeletonCard);
+            }
+        }
+
+        // === NEW FULLSCREEN LOGIC ===
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                videoModal.requestFullscreen().catch(err => {
+                    alert(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function playVideo(videoId, title) {
+            videoPlayer.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&fs=1`; // fs=1 allows fullscreen
+            videoTitle.textContent = title;
+            videoModal.style.display = 'flex';
+        }
+
+        videoCloseBtn.onclick = () => {
+            videoModal.style.display = 'none';
+            videoPlayer.src = ''; 
+            // If in fullscreen, exit it when closing video
+            if (document.fullscreenElement) document.exitFullscreen();
+        };
+    </script>
+
+</body>
+</html>
