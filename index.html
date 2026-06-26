@@ -395,7 +395,7 @@
     document.addEventListener('keydown',e=>{if(e.ctrlKey&&['u','s','c','p','a'].includes(e.key))e.preventDefault();if(e.key==='F12')e.preventDefault();if(e.ctrlKey&&e.shiftKey&&['I','J','C'].includes(e.key))e.preventDefault();if(e.metaKey&&['u','s','c'].includes(e.key))e.preventDefault()});
 
     /* ===== PWA সেটআপ ===== */
-    const manifestData={name:"MyTube",short_name:"MyTube",description:"Video Platform",start_url:"./",display:"standalone",background_color:"#ffffff",theme_color:"#ff0000",icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%23ff0000'/%3E%3Cpolygon points='200,150 200,362 370,256' fill='white'/%3E%3C/svg%3E",sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};
+    const manifestData={name:"My Premium YouTube",short_name:"My Premium YouTube",description:"Video Platform",start_url:"./",display:"standalone",background_color:"#ffffff",theme_color:"#ff0000",icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%23ff0000'/%3E%3Cpolygon points='200,150 200,362 370,256' fill='white'/%3E%3C/svg%3E",sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};
     const mBlob=new Blob([JSON.stringify(manifestData)],{type:'application/json'});
     const mLink=document.createElement('link');mLink.rel='manifest';mLink.href=URL.createObjectURL(mBlob);document.head.appendChild(mLink);
     if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(()=>{})}
@@ -415,7 +415,7 @@
     let user=null,token='',query='Trending in Bangladesh',loading=false,curVid="",curTitle="",curChannel="",curThumb="",vRef=null,cRef=null,vList=[];
 
     /* IndexedDB */
-    const DBN='mytube_dl',DBV=2,STR='videos';let idb=null;
+    const DBN='My Premium YouTube_dl',DBV=2,STR='videos';let idb=null;
     function openDB(){return new Promise((r,j)=>{const q=indexedDB.open(DBN,DBV);q.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(STR))d.createObjectStore(STR,{keyPath:'id'})};q.onsuccess=e=>{idb=e.target.result;r(idb)};q.onerror=e=>j(e)})}
     function dbPut(d){return new Promise((r,j)=>{const t=idb.transaction(STR,'readwrite');t.objectStore(STR).put(d);t.oncomplete=()=>r();t.onerror=e=>j(e)})}
     function dbGet(id){return new Promise((r,j)=>{const t=idb.transaction(STR,'readonly');const g=t.objectStore(STR).get(id);g.onsuccess=()=>r(g.result);g.onerror=e=>j(e)})}
@@ -481,7 +481,7 @@
         const v=document.getElementById('profViewMode'),e=document.getElementById('profEditMode'),h=document.getElementById('profHeadTitle');
         const show=e.style.display==='none';
         v.style.display=show?'none':'';e.style.display=show?'':'none';
-        h.textContent=show?'Edit Profile':'My Profile';
+        h.textContent=show?'Edit channel':'My channel';
     }
 
     /* রেজিস্ট্রেশন */
